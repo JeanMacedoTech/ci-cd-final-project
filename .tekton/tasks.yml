@@ -80,6 +80,6 @@ spec:
       image: image-registry.openshift-image-registry.svc:5000/sn-labs-jeanmacedoar/tekton-lab:latest
       script: |
         set -e
-        oc create deployment $(params.app-name) --image=$(params.build-image) --dry-run=client -o yaml | oc apply -f -
+        kubectl create deployment $(params.app-name) --image=$(params.build-image) --dry-run=client -o yaml | oc apply -f -
 
 
