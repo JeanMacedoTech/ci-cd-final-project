@@ -1,3 +1,4 @@
+---
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
@@ -15,14 +16,21 @@ spec:
       securityContext:
         runAsNonRoot: false
         runAsUser: 0
-      script: |
+      script: >
         #!/usr/bin/env sh
+
         set -eu
+
         echo "Removing all files from ${WORKSPACE_SOURCE_PATH} ..."
+
         # Delete any existing contents of the directory if it exists.
+
         #
+
         # We don't just "rm -rf ${WORKSPACE_SOURCE_PATH}" because ${WORKSPACE_SOURCE_PATH} might be "/"
+
         # or the root of a mounted volume.
+
         if [ -d "${WORKSPACE_SOURCE_PATH}" ] ; then
           # Delete non-hidden files and directories
           rm -rf "${WORKSPACE_SOURCE_PATH:?}"/*
@@ -31,6 +39,7 @@ spec:
           # Delete files and directories starting with .. plus any other character
           rm -rf "${WORKSPACE_SOURCE_PATH}"/..?*
         fi
+
 ---
 apiVersion: tekton.dev/v1beta1
 kind: Task
@@ -43,7 +52,7 @@ spec:
     - name: args
       description: Arguments to pass to nose
       type: string
-      default: "-v"
+      default: -v
   steps:
     - name: nosetests
       image: python:3.9-slim
@@ -54,3 +63,23 @@ spec:
         python -m pip install --upgrade pip wheel
         pip install -r requirements.txt
         nosetests $(params.args)
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy-to-openshift
+spec:
+  params:
+    - name: app-name
+      type: string
+    - name: build-image
+      type: string
+  steps:
+    - name: oc-create-deployment
+      image: image-registry.openshift-image-registry.svc:5000/sn-labs-jeanmacedoar/tekton-lab:latest
+      script: |
+        set -e
+        oc create deployment $(params.app-name) --image=$(params.build-image) --dry-run=client -o yaml | oc apply -f -
+
+
